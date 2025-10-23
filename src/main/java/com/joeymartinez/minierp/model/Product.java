@@ -14,7 +14,6 @@ import lombok.Setter;
 @Table(name = "products")
 public class Product {
 
-    // Getters and Setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -23,7 +22,6 @@ public class Product {
     private double price;
     private int quantity;
 
-    // Constructors
     public Product() {}
 
     public Product(String name, double price, int quantity) {

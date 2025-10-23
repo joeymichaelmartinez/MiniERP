@@ -2,12 +2,14 @@ package com.joeymartinez.minierp.controller;
 
 import com.joeymartinez.minierp.model.Product;
 import com.joeymartinez.minierp.service.ProductService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping("/api")
 public class ProductController {
     private final ProductService productService;
 
@@ -15,13 +17,22 @@ public class ProductController {
         this.productService = productService;
     }
 
-    @GetMapping
-    public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+    @GetMapping("/products")
+    public List<Product> getAllProducts(@RequestParam(value = "name", required = false) String name) {
+        return productService.getProducts(name);
     }
 
-    @PostMapping
+    @GetMapping("/product")
+    public ResponseEntity<Product> getProductById(@RequestParam Long id) {
+        return productService.getProductById(id)
+                .map(product -> ResponseEntity.ok(product))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("products")
     public Product createProduct(@RequestBody Product product) {
         return productService.CreateProduct(product);
     }
+
+
 }
