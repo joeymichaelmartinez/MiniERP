@@ -1,5 +1,6 @@
 package com.joeymartinez.minierp.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -12,7 +13,8 @@ import java.util.List;
 @Entity
 @Table(name="orders")
 public class Order extends BaseEntity {
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<OrderItem> items;
 
     @ManyToOne

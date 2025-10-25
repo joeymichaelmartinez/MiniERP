@@ -6,10 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-@RequestMapping("/api")
 public class ProductController {
     private final ProductService productService;
 
@@ -29,7 +27,7 @@ public class ProductController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("products")
+    @PostMapping("/product")
     public Product createProduct(@RequestBody Product product) {
         return productService.CreateProduct(product);
     }
