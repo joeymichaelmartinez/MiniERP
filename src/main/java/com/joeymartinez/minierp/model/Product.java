@@ -8,20 +8,20 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-@Setter
 @Getter
+@Setter
 @Entity
 @Table(name = "products")
 public class Product extends BaseEntity {
     private String name;
     private double price;
-    private int quantity;
+    private Long stock;
 
     public Product() {}
 
-    public Product(String name, double price, int quantity) {
+    public Product(String name, double price, Long stock) {
         this.name = name;
         this.price = price;
-        this.quantity = quantity;
+        this.stock = stock;
     }
 }

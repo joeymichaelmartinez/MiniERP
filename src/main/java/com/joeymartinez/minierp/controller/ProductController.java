@@ -1,5 +1,6 @@
 package com.joeymartinez.minierp.controller;
 
+import com.joeymartinez.minierp.dto.ProductUpdateDTO;
 import com.joeymartinez.minierp.model.Product;
 import com.joeymartinez.minierp.service.ProductService;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +30,19 @@ public class ProductController {
 
     @PostMapping("/product")
     public Product createProduct(@RequestBody Product product) {
-        return productService.CreateProduct(product);
+        return productService.createProduct(product);
     }
 
+    @PutMapping("/product/{id}")
+    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody ProductUpdateDTO productUpdateDTO) {
+        Product product = productService.updateProduct(id, productUpdateDTO);
+        return ResponseEntity.ok(product);
+    }
+
+    @DeleteMapping("/product/{id")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
+    }
 
 }
