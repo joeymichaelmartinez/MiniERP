@@ -7,6 +7,7 @@ import com.joeymartinez.minierp.repository.CustomerRepository;
 import com.joeymartinez.minierp.repository.ProductRepository;
 
 import com.joeymartinez.minierp.repository.OrderRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 
@@ -36,6 +37,7 @@ public class OrderService {
         return orderRepository.findById(id);
     }
 
+    @Transactional
     public Order createOrder(OrderCreateDTO orderCreateDTO) {
         Customer customer = customerRepository.findById(orderCreateDTO.getCustomerId())
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
@@ -71,13 +73,15 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
+    @Transactional
     public Order updateOrder(Long orderId, OrderUpdateDTO orderUpdateDTO) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("No order found with id: " + orderId));
 
+        ensureOrderIsEditable(order);
+
         List<OrderItem> orderItems = order.getItems();
 
-        // Pre-check stock for all updates
         for (OrderUpdateDTO.ItemUpdateDTO itemDTO : orderUpdateDTO.getItems()) {
             Product product = productRepository.findById(itemDTO.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found: " + itemDTO.getProductId()));
@@ -95,7 +99,6 @@ public class OrderService {
             }
         }
 
-        // Apply updates
         for (OrderUpdateDTO.ItemUpdateDTO itemDTO : orderUpdateDTO.getItems()) {
             Product product = productRepository.findById(itemDTO.getProductId()).get();
             OrderItem existingItem = orderItems.stream()
@@ -103,24 +106,24 @@ public class OrderService {
                     .findFirst()
                     .orElse(null);
 
-            if (existingItem == null && itemDTO.getQuantity() > 0) {
-                // New item
+            long newQuantity = itemDTO.getQuantity();
+
+            if (existingItem == null && newQuantity > 0) {
                 OrderItem newItem = new OrderItem();
                 newItem.setProduct(product);
-                newItem.setQuantity(itemDTO.getQuantity());
-                newItem.setSubtotal(product.getPrice() * itemDTO.getQuantity());
+                newItem.setQuantity(newQuantity);
+                newItem.setSubtotal(product.getPrice() * newQuantity);
                 newItem.setOrder(order);
                 orderItems.add(newItem);
-                adjustProductStock(product, itemDTO.getQuantity());
+                adjustProductStock(product, newQuantity);
             } else if (existingItem != null) {
-                long diff = itemDTO.getQuantity() - existingItem.getQuantity();
+                long diff = newQuantity - existingItem.getQuantity();
 
-                if (itemDTO.getQuantity() > 0) {
-                    existingItem.setQuantity(itemDTO.getQuantity());
-                    existingItem.setSubtotal(product.getPrice() * itemDTO.getQuantity());
+                if (newQuantity > 0) {
+                    existingItem.setQuantity(newQuantity);
+                    existingItem.setSubtotal(product.getPrice() * newQuantity);
                     adjustProductStock(product, diff);
                 } else {
-                    // Remove item and restore stock
                     orderItems.remove(existingItem);
                     adjustProductStock(product, -existingItem.getQuantity());
                 }
@@ -133,13 +136,78 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-
+    @Transactional
     public void deleteOrder(Long id) {
-        if (!orderRepository.existsById(id)) {
-            throw new RuntimeException("No order found with id: " + id);
-        }
-        orderRepository.deleteById(id);
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        ensureOrderIsEditable(order);
+
+        orderRepository.delete(order);
     }
+
+    @Transactional
+    public void cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+
+        ensureOrderIsEditable(order);
+
+        for (OrderItem item : order.getItems()) {
+            adjustProductStock(item.getProduct(), -item.getQuantity());
+        }
+
+        order.setStatus(OrderStatus.CANCELED);
+        orderRepository.save(order);
+    }
+
+    public Order updateOrderStatus(Long id, OrderStatus newStatus) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        OrderStatus currentStatus = order.getStatus();
+
+        if (newStatus == currentStatus) {
+            return order;
+        }
+
+        switch (currentStatus) {
+            case NEW -> {
+                if (newStatus == OrderStatus.PROCESSING) {
+                    for (OrderItem item : order.getItems()) {
+                        adjustProductStock(item.getProduct(), item.getQuantity());
+                    }
+                } else if (newStatus == OrderStatus.CANCELED) {
+
+                } else {
+                    throw new RuntimeException("Invalid transition from NEW to " + newStatus);
+                }
+            }
+            case PROCESSING -> {
+                if (newStatus == OrderStatus.CANCELED) {
+                    for (OrderItem item : order.getItems()) {
+                        adjustProductStock(item.getProduct(), -item.getQuantity());
+                    }
+                } else if (newStatus != OrderStatus.COMPLETE) {
+                    throw new RuntimeException("Invalid transition from PROCESSING to " + newStatus);
+                }
+            }
+            case COMPLETE, CANCELED -> {
+                throw new RuntimeException("Cannot change status of a completed or canceled order");
+            }
+        }
+
+        order.setStatus(newStatus);
+        order.setUpdatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
+        return orderRepository.save(order);
+    }
+
+    private void ensureOrderIsEditable(Order order) {
+        if (order.getStatus() != OrderStatus.NEW) {
+            throw new RuntimeException("Order cannot be modified in status: " + order.getStatus());
+        }
+    }
+
 
     private void adjustProductStock(Product product, long quantityChange) {
         long newStock = product.getStock() - quantityChange;

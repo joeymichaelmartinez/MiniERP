@@ -3,6 +3,7 @@ package com.joeymartinez.minierp.service;
 import com.joeymartinez.minierp.model.Customer;
 import com.joeymartinez.minierp.dto.CustomerUpdateDTO;
 import com.joeymartinez.minierp.repository.CustomerRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import static com.joeymartinez.minierp.util.UpdateUtils.updateIfPresent;
 
@@ -27,10 +28,12 @@ public class CustomerService {
         return customerRepository.findAll();
     }
 
+    @Transactional
     public Customer createCustomer(Customer customer) {
         return customerRepository.save(customer);
     }
 
+    @Transactional
     public Customer updateCustomer(Long id, CustomerUpdateDTO customerUpdateDTO) {
         Customer existingCustomer = customerRepository.findById(id).orElseThrow(() -> new RuntimeException("No Customer Found"));
         updateIfPresent(customerUpdateDTO.getFirstName(), existingCustomer::setFirstName);
@@ -44,6 +47,7 @@ public class CustomerService {
         return customerRepository.save(existingCustomer);
     }
 
+    @Transactional
     public void deleteCustomer(Long id) {
         if (!customerRepository.existsById(id)) {
             throw new RuntimeException("No customer found with id: " + id);

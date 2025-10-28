@@ -1,8 +1,10 @@
 package com.joeymartinez.minierp.controller;
 
+import com.joeymartinez.minierp.dto.OrderStatusUpdateDTO;
 import com.joeymartinez.minierp.dto.OrderUpdateDTO;
 import com.joeymartinez.minierp.model.Order;
 import com.joeymartinez.minierp.dto.OrderCreateDTO;
+import com.joeymartinez.minierp.model.OrderStatus;
 import com.joeymartinez.minierp.service.OrderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -44,4 +46,22 @@ public class OrderController {
         orderService.deleteOrder(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/order/{id}/cancel")
+    public ResponseEntity<Void> cancelOrder(@PathVariable Long id) {
+        orderService.cancelOrder(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/order/{id}/status")
+    public ResponseEntity<Order> updateOrderStatus(
+            @PathVariable Long id,
+            @RequestBody OrderStatusUpdateDTO statusUpdateDTO
+    ) {
+        Order updatedOrder = orderService.updateOrderStatus(id, statusUpdateDTO.getStatus());
+        return ResponseEntity.ok(updatedOrder);
+    }
+
+
+
 }

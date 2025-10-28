@@ -7,6 +7,6 @@ import lombok.Setter;
 @Setter
 public class ProductUpdateDTO {
     private String name;
-    private double price;
+    private Double price;
     private Long stock;
 }

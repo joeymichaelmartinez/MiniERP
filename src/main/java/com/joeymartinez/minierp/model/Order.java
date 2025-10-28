@@ -23,4 +23,7 @@ public class Order extends BaseEntity {
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private double totalPrice;
+
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status =  OrderStatus.NEW;
 }

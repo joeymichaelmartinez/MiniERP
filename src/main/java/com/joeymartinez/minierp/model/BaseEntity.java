@@ -2,14 +2,15 @@ package com.joeymartinez.minierp.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.sql.Timestamp;
 import java.time.Instant;
 
 @Getter
+@Setter
 @MappedSuperclass
 public abstract class BaseEntity {
-    // Getters and setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     protected Long id;
